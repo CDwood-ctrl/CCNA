@@ -38,7 +38,7 @@
   /* ---- Console status bar ---- */
   .statusbar{
     position:sticky; top:0; z-index:50;
-    background:rgba(10,13,23,.82); backdrop-filter:blur(12px);
+    background:rgba(10,13,23,.82); -webkit-backdrop-filter:blur(12px); backdrop-filter:blur(12px);
     border-bottom:1px solid var(--line);
     padding:10px 0;
   }
@@ -386,9 +386,9 @@ function render(){
         <span class="ph-right">${chip}<span class="ports">${leds}</span></span>
         <span class="caret">▸</span>
       </button>
-      <div class="ph-body"><div class="ph-blurb">${p.blurb}</div><ul class="tasks">${
-        p.tasks.map((t,ti)=>`<li class="task"><input type="checkbox" id="t${pi}_${ti}" ${store.tasks[pi+'_'+ti]?'checked':''}><span class="tled"></span><span class="t-label">${t}</span></li>`).join("")
-      }</ul></div>`;
+      <div class="ph-body"><div class="ph-blurb">${p.blurb}</div><div class="tasks">${
+        p.tasks.map((t,ti)=>`<label class="task"><input type="checkbox" id="t${pi}_${ti}" ${store.tasks[pi+'_'+ti]?'checked':''}><span class="tled"></span><span class="t-label">${t}</span></label>`).join("")
+      }</div></div>`;
     host.appendChild(card);
 
     const head=card.querySelector(".ph-head");
