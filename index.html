@@ -1,0 +1,472 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>CCNA · Bring the Network Online</title>
+<meta name="theme-color" content="#0E1220">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="CCNA">
+<link rel="manifest" href="manifest.json">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0E1220; --bg-2:#0A0D17; --surface:#161B2C; --surface-2:#1E2540;
+    --line:#28304E; --ink:#E9EDF8; --muted:#828DAB;
+    --up:#2ED39B; --up-glow:rgba(46,211,155,.5);
+    --activity:#F5B544; --signal:#4EA8FF; --alert:#FF6B6B;
+    --grad:linear-gradient(90deg,#4EA8FF,#2ED39B);
+    --mono:'IBM Plex Mono',ui-monospace,Menlo,monospace;
+    --disp:'Space Grotesk',system-ui,sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{-webkit-text-size-adjust:100%}
+  body{
+    background:
+      radial-gradient(1200px 600px at 80% -10%, rgba(78,168,255,.10), transparent 60%),
+      radial-gradient(900px 500px at -10% 10%, rgba(46,211,155,.07), transparent 55%),
+      var(--bg);
+    color:var(--ink); font-family:var(--disp);
+    line-height:1.5; min-height:100vh;
+    padding:0 0 64px; -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:760px; margin:0 auto; padding:0 18px}
+
+  /* ---- Console status bar ---- */
+  .statusbar{
+    position:sticky; top:0; z-index:50;
+    background:rgba(10,13,23,.82); backdrop-filter:blur(12px);
+    border-bottom:1px solid var(--line);
+    padding:10px 0;
+  }
+  .statusbar .wrap{display:flex; align-items:center; gap:14px; justify-content:space-between}
+  .sb-left{display:flex; align-items:center; gap:10px; min-width:0}
+  .dot-live{width:9px;height:9px;border-radius:50%;background:var(--up);
+    box-shadow:0 0 10px var(--up-glow); flex:none; animation:pulse 2.4s infinite}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
+  .sb-title{font-family:var(--mono);font-size:12px;letter-spacing:.12em;
+    text-transform:uppercase;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .sb-title b{color:var(--ink);font-weight:600}
+  .sb-uptime{font-family:var(--mono);font-size:13px;font-weight:600;color:var(--up);white-space:nowrap}
+
+  /* ---- Hero ---- */
+  .hero{padding:34px 0 8px}
+  .eyebrow{font-family:var(--mono);font-size:12px;letter-spacing:.22em;text-transform:uppercase;color:var(--signal)}
+  h1{font-size:clamp(28px,7vw,44px);font-weight:700;line-height:1.05;letter-spacing:-.02em;margin:10px 0 6px}
+  h1 .grad{background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
+  .sub{color:var(--muted);font-size:15px;max-width:48ch}
+
+  .gauge{margin:24px 0 6px;background:var(--surface);border:1px solid var(--line);
+    border-radius:18px;padding:20px}
+  .gauge-top{display:flex;justify-content:space-between;align-items:flex-end;gap:12px;margin-bottom:14px;flex-wrap:wrap}
+  .gauge-num{font-size:clamp(40px,12vw,64px);font-weight:700;letter-spacing:-.03em;line-height:.9}
+  .gauge-num span{font-size:.4em;color:var(--muted);font-weight:500}
+  .gauge-label{font-family:var(--mono);font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--muted);margin-top:6px}
+  .gauge-meta{text-align:right;font-family:var(--mono);font-size:12px;color:var(--muted);line-height:1.7}
+  .gauge-meta b{color:var(--ink)}
+  .gauge-meta .countdown{color:var(--activity)}
+  .bar{height:12px;border-radius:99px;background:var(--bg-2);overflow:hidden;border:1px solid var(--line)}
+  .bar > i{display:block;height:100%;width:0;background:var(--grad);border-radius:99px;
+    transition:width .8s cubic-bezier(.16,1,.3,1)}
+
+  .stat-row{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:14px}
+  .stat{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:13px 14px}
+  .stat .v{font-size:24px;font-weight:700;line-height:1}
+  .stat .v.streak::after{content:" \1F525";font-size:.7em}
+  .stat .k{font-family:var(--mono);font-size:10px;letter-spacing:.13em;text-transform:uppercase;color:var(--muted);margin-top:6px}
+
+  /* ---- Section heading ---- */
+  .sec-head{display:flex;align-items:baseline;gap:12px;margin:34px 0 14px}
+  .sec-head h2{font-size:14px;font-family:var(--mono);font-weight:600;letter-spacing:.16em;text-transform:uppercase;color:var(--muted)}
+  .sec-head .rule{flex:1;height:1px;background:var(--line)}
+
+  /* ---- Phase cards ---- */
+  .phase{background:var(--surface);border:1px solid var(--line);border-radius:16px;margin-bottom:12px;overflow:hidden;transition:border-color .3s}
+  .phase.online{border-color:rgba(46,211,155,.4)}
+  .ph-head{display:flex;align-items:center;gap:14px;padding:16px 16px;cursor:pointer;width:100%;background:none;border:none;text-align:left;color:inherit;font-family:inherit}
+  .ph-head:focus-visible{outline:2px solid var(--signal);outline-offset:-2px}
+  .ph-code{font-family:var(--mono);font-size:12px;color:var(--muted);font-weight:600;flex:none}
+  .ph-main{flex:1;min-width:0}
+  .ph-name{font-size:17px;font-weight:600;letter-spacing:-.01em}
+  .ph-weeks{font-family:var(--mono);font-size:11px;color:var(--muted);margin-top:2px}
+  .ph-right{display:flex;flex-direction:column;align-items:flex-end;gap:7px;flex:none}
+  .chip{font-family:var(--mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;padding:3px 8px;border-radius:99px;border:1px solid var(--line);color:var(--muted);white-space:nowrap}
+  .chip.up{color:var(--activity);border-color:rgba(245,181,68,.4);background:rgba(245,181,68,.08)}
+  .chip.online{color:var(--up);border-color:rgba(46,211,155,.4);background:rgba(46,211,155,.1)}
+  .ports{display:flex;gap:5px;flex-wrap:wrap;max-width:130px;justify-content:flex-end}
+  .led{width:9px;height:9px;border-radius:2px;background:#222a44;box-shadow:inset 0 0 0 1px #303a5e;transition:all .35s}
+  .led.on{background:var(--up);box-shadow:0 0 7px var(--up-glow),inset 0 0 0 1px var(--up)}
+  .caret{font-family:var(--mono);color:var(--muted);transition:transform .3s;flex:none;font-size:13px}
+  .phase.open .caret{transform:rotate(90deg)}
+
+  .ph-body{max-height:0;overflow:hidden;transition:max-height .4s ease}
+  .ph-blurb{padding:0 16px 4px;color:var(--muted);font-size:13px;font-family:var(--mono)}
+  .tasks{list-style:none;padding:8px 16px 16px}
+  .task{display:flex;align-items:flex-start;gap:12px;padding:9px 0;border-top:1px solid rgba(40,48,78,.6);cursor:pointer}
+  .task:first-child{border-top:none}
+  .task input{position:absolute;opacity:0;width:0;height:0}
+  .tled{width:18px;height:18px;border-radius:5px;border:1.5px solid var(--line);flex:none;margin-top:1px;display:grid;place-items:center;transition:all .25s;background:var(--bg-2)}
+  .tled::after{content:"";width:8px;height:8px;border-radius:2px;background:var(--up);transform:scale(0);transition:transform .25s cubic-bezier(.2,1.4,.4,1)}
+  .task input:checked + .tled{border-color:var(--up);box-shadow:0 0 9px var(--up-glow)}
+  .task input:checked + .tled::after{transform:scale(1)}
+  .task input:focus-visible + .tled{outline:2px solid var(--signal);outline-offset:2px}
+  .t-label{font-size:14.5px;transition:color .25s}
+  .task input:checked ~ .t-label{color:var(--muted);text-decoration:line-through;text-decoration-color:rgba(130,141,171,.5)}
+
+  /* ---- Daily drills ---- */
+  .drills{background:linear-gradient(180deg,rgba(255,107,107,.05),transparent),var(--surface);
+    border:1px solid rgba(255,107,107,.22);border-radius:16px;padding:18px}
+  .drills h3{font-size:15px;display:flex;align-items:center;gap:9px}
+  .drills h3 .mon{width:9px;height:9px;border-radius:50%;background:var(--alert);box-shadow:0 0 9px rgba(255,107,107,.6);animation:pulse 1.8s infinite}
+  .drills p{color:var(--muted);font-size:12.5px;font-family:var(--mono);margin:5px 0 14px}
+  .drill{display:flex;align-items:center;gap:12px;padding:10px 0;border-top:1px solid rgba(40,48,78,.6);cursor:pointer}
+  .drill input{position:absolute;opacity:0;width:0;height:0}
+  .dled{width:16px;height:16px;border-radius:50%;border:1.5px solid var(--line);flex:none;background:var(--bg-2);transition:all .25s}
+  .drill input:checked + .dled{background:var(--up);border-color:var(--up);box-shadow:0 0 8px var(--up-glow)}
+  .drill input:focus-visible + .dled{outline:2px solid var(--signal);outline-offset:2px}
+  .d-label{font-size:14px}
+  .drill input:checked ~ .d-label{color:var(--muted)}
+  .drills .reset-note{font-family:var(--mono);font-size:10.5px;color:var(--muted);margin-top:12px;letter-spacing:.04em}
+
+  /* ---- Booking gate ---- */
+  .gate{background:var(--surface-2);border:1px solid var(--line);border-radius:16px;padding:20px;margin-top:12px}
+  .gate h3{font-size:16px;margin-bottom:4px}
+  .gate p{color:var(--muted);font-size:13px;font-family:var(--mono);margin-bottom:14px}
+  .gate ul{list-style:none}
+  .gate li{display:flex;gap:10px;align-items:flex-start;padding:7px 0;font-size:14px}
+  .gate li::before{content:"\25A2";color:var(--muted);font-family:var(--mono)}
+  .gate li.done::before{content:"\2611";color:var(--up)}
+  .gate li.done{color:var(--muted)}
+  .gate .golive{margin-top:14px;padding:12px;border-radius:11px;text-align:center;font-family:var(--mono);
+    font-size:13px;letter-spacing:.1em;text-transform:uppercase;border:1px dashed var(--line);color:var(--muted)}
+  .gate .golive.ready{border-color:var(--up);color:var(--up);background:rgba(46,211,155,.08)}
+
+  /* ---- footer ---- */
+  footer{margin-top:30px;text-align:center;font-family:var(--mono);font-size:11px;color:var(--muted);letter-spacing:.05em}
+  footer a{color:var(--signal);text-decoration:none}
+  .reset-btn{margin-top:14px;background:none;border:1px solid var(--line);color:var(--muted);
+    font-family:var(--mono);font-size:11px;padding:7px 14px;border-radius:8px;cursor:pointer;letter-spacing:.08em}
+  .reset-btn:hover{border-color:var(--alert);color:var(--alert)}
+
+  @media (max-width:480px){
+    .gauge-meta{text-align:left}
+    .gauge-top{flex-direction:column;align-items:flex-start}
+  }
+  @media (prefers-reduced-motion:reduce){
+    *{animation:none!important;transition:none!important}
+  }
+</style>
+</head>
+<body>
+
+<div class="statusbar">
+  <div class="wrap">
+    <div class="sb-left">
+      <span class="dot-live"></span>
+      <span class="sb-title"><b>ccna-net</b> · console</span>
+    </div>
+    <span class="sb-uptime" id="sbUptime">uptime 0%</span>
+  </div>
+</div>
+
+<div class="wrap">
+  <header class="hero">
+    <div class="eyebrow">// deployment target · Q1 2027</div>
+    <h1>Bring the<br><span class="grad">network online.</span></h1>
+    <p class="sub">Charlie's CCNA 200-301 build plan. Every task you finish lights a port. Get them all green, pass the exam, ship the network.</p>
+
+    <div class="gauge">
+      <div class="gauge-top">
+        <div>
+          <div class="gauge-num"><span id="gPct">0</span><span>% online</span></div>
+          <div class="gauge-label" id="gCount">0 / 0 ports up</div>
+        </div>
+        <div class="gauge-meta">
+          <div>deadline <b>31 Mar 2027</b></div>
+          <div class="countdown"><b id="gDays">—</b> days remaining</div>
+          <div id="gPhase">phase 0 of 7</div>
+        </div>
+      </div>
+      <div class="bar"><i id="gBar"></i></div>
+      <div class="stat-row">
+        <div class="stat"><div class="v streak" id="sStreak">0</div><div class="k">day streak</div></div>
+        <div class="stat"><div class="v" id="sWeek">0<span style="font-size:.55em;color:var(--muted)">/wk</span></div><div class="k">done this wk</div></div>
+        <div class="stat"><div class="v" id="sPhases">0<span style="font-size:.55em;color:var(--muted)">/7</span></div><div class="k">segments online</div></div>
+      </div>
+    </div>
+  </header>
+
+  <div class="sec-head"><h2>Build phases</h2><div class="rule"></div></div>
+  <div id="phases"></div>
+
+  <div class="sec-head"><h2>Daily drills</h2><div class="rule"></div></div>
+  <div class="drills">
+    <h3><span class="mon"></span>Keep these warm</h3>
+    <p>Your banked weak spots. Tap each once a day — resets every morning. This is the cheap habit that stops decay between sessions.</p>
+    <div id="drills"></div>
+    <div class="reset-note" id="drillReset"></div>
+  </div>
+
+  <div class="sec-head"><h2>Go-live gate</h2><div class="rule"></div></div>
+  <div class="gate">
+    <h3>Before you book the exam</h3>
+    <p>Don't schedule until every box is checked. The Boson gate is the real one.</p>
+    <ul id="gate"></ul>
+    <div class="golive" id="golive">gate locked · keep building</div>
+  </div>
+
+  <footer>
+    <div>built from your study plan · runs offline · add to home screen</div>
+    <button class="reset-btn" id="resetBtn">reset all progress</button>
+  </footer>
+</div>
+
+<script>
+const TARGET = new Date("2027-03-31T23:59:59");
+
+const PHASES = [
+  { code:"00", name:"Foundation Lock-In", weeks:"~2–3 weeks", blurb:"Bring the core online. Mostly consolidation of what you've already proved.",
+    tasks:[
+      "Cold-recall: 20 subnet questions, <60s each (subnettingpractice.com)",
+      "Drill the −2 reflex until 'usable' auto-fires minus-two",
+      "Memorise private ranges: 10/8 · 172.16–31 · 192.168/16",
+      "Mask conversion both ways: /8–/30 ⇄ dotted decimal",
+      "IPv6 addressing: structure + abbreviation rules",
+      "IPv6 types: global, link-local, unique-local; EUI-64 / SLAAC",
+      "Well-known ports to 100%: 20/21,22,23,25,53,80,110,143,443",
+      "Set up Anki + Jeremy's deck; commit to daily reviews",
+      "Install Packet Tracer; build 2-PC + switch ping test" ]},
+  { code:"01", name:"Switching & VLANs", weeks:"~6–8 weeks", blurb:"Light up the access layer. First heavy config — lab everything.",
+    tasks:[
+      "Jeremy: switching fundamentals; observe MAC table in lab",
+      "Configure access ports + VLANs from a blank switch",
+      "802.1Q trunking between two switches; verify with show",
+      "Inter-VLAN routing: router-on-a-stick, end-to-end",
+      "Inter-VLAN routing: Layer-3 switch / SVIs",
+      "STP: root bridge election + port states",
+      "Configure + verify STP; manipulate root priority",
+      "RSTP + PortFast + BPDU Guard",
+      "EtherChannel (LACP): config + verify",
+      "Wireless fundamentals: AP modes, WLC, SSIDs, roaming",
+      "Mini-lab: VLANs + trunks + STP + EtherChannel from blank",
+      "Phase quiz: 85%+ on switching set" ]},
+  { code:"02", name:"Routing & OSPF", weeks:"~8–10 weeks", blurb:"Open the routes. The biggest domain (25%) and the heart of CCNA.",
+    tasks:[
+      "Routing fundamentals: table, longest-match, AD vs metric",
+      "Static routes: next-hop, exit-interface, fully-specified",
+      "Default routes + floating static",
+      "Lab: multi-router static routing end-to-end",
+      "OSPF concepts: areas, LSAs, DR/BDR, neighbor states",
+      "Configure single-area OSPFv2; verify adjacencies",
+      "OSPF network types + DR/BDR election",
+      "OSPF cost / metric tuning",
+      "Troubleshoot OSPF: break an adjacency, diagnose it",
+      "FHRP / HSRP: concepts + config",
+      "IPv6 routing: static + OSPFv3 basics",
+      "Mega-lab: 3+ router OSPF — build, break, fix, from memory",
+      "Phase quiz: 85%+ on routing set" ]},
+  { code:"03", name:"IP Services", weeks:"~3–4 weeks", blurb:"Turn on the services that make the network usable.",
+    tasks:[
+      "DHCP: IOS server + relay (ip helper-address); lab",
+      "DNS basics + IOS name resolution",
+      "NAT: static, dynamic, PAT/overload; lab to 'internet'",
+      "NTP: client/server config",
+      "SNMP fundamentals (v2c / v3 concepts)",
+      "Syslog: severity levels + config",
+      "QoS basics: marking, queuing, shaping vs policing",
+      "SSH: secure remote access (retire Telnet)",
+      "Mini-lab: DHCP + NAT + SSH on one topology",
+      "Phase quiz: 85%+" ]},
+  { code:"04", name:"Security Fundamentals", weeks:"~4–5 weeks", blurb:"Lock the doors. ACLs are the big one here.",
+    tasks:[
+      "Security concepts: threats, vulnerabilities, CIA, attacks",
+      "Standard ACLs: config, placement, verify",
+      "Extended ACLs: protocol/port matching; permit/deny lab",
+      "Named ACLs + editing",
+      "Port security: config + violation modes; lab",
+      "DHCP snooping + Dynamic ARP Inspection",
+      "AAA: RADIUS / TACACS+ / 802.1X concepts",
+      "VPN concepts: site-to-site vs remote-access, IPsec",
+      "Wireless security: WPA2 / WPA3, auth methods",
+      "Device hardening: secrets, banners, disable services",
+      "Mini-lab: ACLs + port security on the access layer",
+      "Phase quiz: 85%+" ]},
+  { code:"05", name:"Automation & Programmability", weeks:"~3–4 weeks", blurb:"Automate the fabric. Lighter, but real weight (10%) and growing.",
+    tasks:[
+      "Controller-based / SDN: control vs data plane",
+      "Cisco DNA Center + intent-based networking",
+      "REST APIs: methods, CRUD, response codes",
+      "Data formats: read + interpret JSON; XML, YAML",
+      "Config mgmt: Ansible vs Puppet vs Chef vs Terraform",
+      "Programmability benefits vs traditional config",
+      "Phase quiz: 85%+" ]},
+  { code:"06", name:"Exam Prep & Go-Live", weeks:"~4–6 weeks", blurb:"Go live. Timed reps until you're consistently over the line.",
+    tasks:[
+      "Packet Tracer mega-lab #1 (multi-domain) from blank",
+      "Packet Tracer mega-lab #2 (troubleshooting focus)",
+      "Boson ExSim exam A (timed) — review every miss",
+      "Boson ExSim exam B (timed) — review every miss",
+      "Boson ExSim exam C (timed)",
+      "Drill weakest domain back up to 85%+",
+      "Second question source pass (Pearson / Jeremy bonus)",
+      "Re-confirm 200-301 blueprint on cisco.com",
+      "Hit 85%+ consistently, timed → schedule exam",
+      "Final light review — no cramming the day before" ]}
+];
+
+const DRILLS = [
+  "5 subnet speed questions",
+  "−2 usable-hosts reflex check",
+  "Private ranges recall",
+  "Mask conversion: 3 prefixes → dotted decimal",
+  "Ports flash review"
+];
+
+const GATE = [
+  "Phases 0–5 complete, every milestone hit",
+  "All weak spots automatic (Anki mature)",
+  "Build + troubleshoot in Packet Tracer, cold",
+  "Boson 85%+ consistently, timed",
+  "Blueprint reconfirmed on cisco.com"
+];
+
+// ---------- storage (defensive: works even if storage is blocked) ----------
+const KEY="ccna_net_v1";
+let store = { tasks:{}, drills:{}, drillDate:"", streak:0, lastActive:"", week:{}, gate:{} };
+try{ const raw=localStorage.getItem(KEY); if(raw) store=Object.assign(store,JSON.parse(raw)); }catch(e){}
+function save(){ try{ localStorage.setItem(KEY,JSON.stringify(store)); }catch(e){} }
+
+const todayStr = ()=> new Date().toISOString().slice(0,10);
+function weekStr(){ const d=new Date(); const day=(d.getDay()+6)%7; d.setDate(d.getDate()-day); return d.toISOString().slice(0,10); }
+
+// reset daily drills if it's a new day
+if(store.drillDate!==todayStr()){ store.drills={}; store.drillDate=todayStr(); save(); }
+
+function markActive(){
+  const t=todayStr();
+  if(store.lastActive!==t){
+    const y=new Date(Date.now()-86400000).toISOString().slice(0,10);
+    store.streak = (store.lastActive===y)? store.streak+1 : 1;
+    store.lastActive=t;
+    save();
+  }
+}
+// streak break check on load
+(function(){
+  const t=todayStr(), y=new Date(Date.now()-86400000).toISOString().slice(0,10);
+  if(store.lastActive && store.lastActive!==t && store.lastActive!==y){ store.streak=0; save(); }
+})();
+
+// ---------- render ----------
+const $=s=>document.querySelector(s);
+let totalTasks=0; PHASES.forEach(p=>totalTasks+=p.tasks.length);
+
+function render(){
+  // phases
+  const host=$("#phases"); host.innerHTML="";
+  let doneTotal=0, segOnline=0;
+  PHASES.forEach((p,pi)=>{
+    let done=p.tasks.reduce((a,_,ti)=> a + (store.tasks[pi+"_"+ti]?1:0),0);
+    doneTotal+=done;
+    const all = done===p.tasks.length;
+    const some = done>0 && !all;
+    if(all) segOnline++;
+    const open = store["open_"+pi];
+    const card=document.createElement("div");
+    card.className="phase"+(all?" online":"")+(open?" open":"");
+    const leds=p.tasks.map((_,ti)=>`<span class="led ${store.tasks[pi+'_'+ti]?'on':''}"></span>`).join("");
+    const chip = all?`<span class="chip online">online</span>` : some?`<span class="chip up">bringing up</span>` : `<span class="chip">offline</span>`;
+    card.innerHTML=`
+      <button class="ph-head" aria-expanded="${open?'true':'false'}">
+        <span class="ph-code">PH ${p.code}</span>
+        <span class="ph-main"><span class="ph-name">${p.name}</span><span class="ph-weeks">${p.weeks} · ${done}/${p.tasks.length} ports</span></span>
+        <span class="ph-right">${chip}<span class="ports">${leds}</span></span>
+        <span class="caret">▸</span>
+      </button>
+      <div class="ph-body"><div class="ph-blurb">${p.blurb}</div><ul class="tasks">${
+        p.tasks.map((t,ti)=>`<li class="task"><input type="checkbox" id="t${pi}_${ti}" ${store.tasks[pi+'_'+ti]?'checked':''}><span class="tled"></span><span class="t-label">${t}</span></li>`).join("")
+      }</ul></div>`;
+    host.appendChild(card);
+
+    const head=card.querySelector(".ph-head");
+    const body=card.querySelector(".ph-body");
+    if(open) body.style.maxHeight=body.scrollHeight+"px";
+    head.addEventListener("click",()=>{
+      const isOpen=card.classList.toggle("open");
+      store["open_"+pi]=isOpen; save();
+      head.setAttribute("aria-expanded",isOpen);
+      body.style.maxHeight = isOpen ? body.scrollHeight+"px" : "0";
+    });
+    card.querySelectorAll(".task input").forEach((cb,ti)=>{
+      cb.addEventListener("change",()=>{
+        const k=pi+"_"+ti;
+        if(cb.checked){ store.tasks[k]=1; store.week[weekStr()]=(store.week[weekStr()]||0)+1; markActive(); }
+        else { delete store.tasks[k]; }
+        save(); render();
+        body.style.maxHeight=body.scrollHeight+"px";
+      });
+    });
+  });
+
+  // gauge
+  const pct = totalTasks? Math.round(doneTotal/totalTasks*100):0;
+  $("#gPct").textContent=pct;
+  $("#gBar").style.width=pct+"%";
+  $("#gCount").textContent=`${doneTotal} / ${totalTasks} ports up`;
+  $("#sbUptime").textContent=`uptime ${pct}%`;
+  $("#sPhases").innerHTML=`${segOnline}<span style="font-size:.55em;color:var(--muted)">/7</span>`;
+  $("#sStreak").textContent=store.streak;
+  $("#sWeek").innerHTML=`${store.week[weekStr()]||0}<span style="font-size:.55em;color:var(--muted)">/wk</span>`;
+  const curPhase = Math.min(segOnline, 6);
+  $("#gPhase").textContent=`phase ${curPhase} of 7`;
+
+  // drills
+  const dh=$("#drills"); dh.innerHTML="";
+  DRILLS.forEach((d,i)=>{
+    const row=document.createElement("label"); row.className="drill";
+    row.innerHTML=`<input type="checkbox" ${store.drills[i]?'checked':''}><span class="dled"></span><span class="d-label">${d}</span>`;
+    row.querySelector("input").addEventListener("change",e=>{
+      if(e.target.checked){store.drills[i]=1; markActive();} else delete store.drills[i];
+      save(); render();
+    });
+    dh.appendChild(row);
+  });
+  const ddone=Object.keys(store.drills).length;
+  $("#drillReset").textContent = ddone===DRILLS.length ? "✓ all drills cleared today — resets tomorrow" : `${ddone}/${DRILLS.length} done today · resets at midnight`;
+
+  // gate
+  const gh=$("#gate"); gh.innerHTML="";
+  GATE.forEach((g,i)=>{
+    const li=document.createElement("li");
+    li.className=store.gate[i]?"done":"";
+    li.textContent=g;
+    li.addEventListener("click",()=>{ if(store.gate[i])delete store.gate[i]; else store.gate[i]=1; save(); render(); });
+    gh.appendChild(li);
+  });
+  const gready=Object.keys(store.gate).length===GATE.length;
+  const gl=$("#golive");
+  gl.className="golive"+(gready?" ready":"");
+  gl.textContent=gready?"✓ gate open · book the exam":"gate locked · keep building";
+
+  // countdown
+  const days=Math.max(0,Math.ceil((TARGET-new Date())/86400000));
+  $("#gDays").textContent=days;
+}
+
+$("#resetBtn").addEventListener("click",()=>{
+  if(confirm("Reset ALL progress, streak and checklists? This can't be undone.")){
+    store={ tasks:{}, drills:{}, drillDate:todayStr(), streak:0, lastActive:"", week:{}, gate:{} };
+    save(); render();
+  }
+});
+
+render();
+window.addEventListener("resize",()=>{
+  document.querySelectorAll(".phase.open .ph-body").forEach(b=>b.style.maxHeight=b.scrollHeight+"px");
+});
+</script>
+</body>
+</html>
